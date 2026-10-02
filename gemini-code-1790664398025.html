@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>오늘 뭐 먹지? - 카카오 스타일 맞춤 맛집 탐색기</title>
+  <style>
+    * { box-sizing: border-box; font-family: 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif; }
+    body { background-color: #f7f7f7; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 15px; }
+    .kakao-card { background: #ffffff; width: 100%; max-width: 440px; border-radius: 20px; box-shadow: 0 8px 24px rgba(0,0,0,0.08); padding: 24px; border: 1px solid #eaeaea; }
+    .kakao-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; }
+    .badge { background: #FEE500; color: #191919; font-weight: 800; font-size: 0.8rem; padding: 4px 10px; border-radius: 12px; }
+    .step-text { color: #888888; font-size: 0.85rem; font-weight: 600; }
+    h2 { margin: 0 0 8px 0; color: #191919; font-size: 1.3rem; font-weight: 800; word-break: keep-all; }
+    .sub-desc { font-size: 0.85rem; color: #666666; margin-top: 0; margin-bottom: 20px; line-height: 1.4; word-break: keep-all; }
+    .step-content { display: none; }
+    .step-content.active { display: block; }
+    .grid-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .category-btn { padding: 14px; border: 1.5px solid #eeeeee; border-radius: 12px; background: #fafafa; font-size: 0.95rem; font-weight: 700; color: #333; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 6px; }
+    .category-btn:hover { background: #FEE500; border-color: #FEE500; color: #191919; }
+    input[type="text"] { width: 100%; padding: 14px; border: 1.5px solid #e0e0e0; border-radius: 12px; font-size: 0.95rem; margin-bottom: 16px; outline: none; background: #fafafa; transition: border-color 0.2s; }
+    input[type="text"]:focus { border-color: #191919; background: #ffffff; }
+    .btn-kakao { width: 100%; padding: 15px; background: #FEE500; color: #191919; border: none; border-radius: 12px; font-size: 1rem; font-weight: 800; cursor: pointer; transition: background 0.2s; margin-top: 8px; }
+    .btn-kakao:hover { background: #fada00; }
+    .btn-dark { width: 100%; padding: 14px; background: #3c1e1e; color: #ffffff; border: none; border-radius: 12px; font-size: 0.95rem; font-weight: 700; cursor: pointer; margin-top: 10px; }
+    .menu-select-box { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
+    .menu-card { background: #fafafa; border: 2px solid #eeeeee; border-radius: 12px; padding: 16px; font-weight: 800; color: #333333; cursor: pointer; display: flex; justify-content: space-between; align-items: center; transition: all 0.2s; }
+    .menu-card:hover { border-color: #FEE500; background: #fffde6; }
+    .menu-card.selected { border-color: #191919; background: #FEE500; color: #191919; }
+    .select-tag { font-size: 0.75rem; background: #ffffff; padding: 4px 8px; border-radius: 8px; font-weight: 700; color: #666; }
+    .menu-card.selected .select-tag { background: #191919; color: #ffffff; }
+    .location-box { background: #fdfdfd; border: 1.5px dashed #cccccc; border-radius: 12px; padding: 16px; margin-bottom: 16px; }
+    .location-status { font-size: 0.85rem; color: #155724; background: #d4edda; padding: 10px 12px; border-radius: 8px; margin-top: 10px; font-weight: 600; display: none; }
+    .restaurant-card { border: 1px solid #eeeeee; border-radius: 14px; padding: 16px; margin-bottom: 12px; background: #ffffff; box-shadow: 0 2px 8px rgba(0,0,0,0.03); }
+    .restaurant-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px; }
+    .restaurant-title { font-weight: 800; font-size: 1.05rem; color: #191919; }
+    .restaurant-distance { font-size: 0.75rem; color: #e74c3c; font-weight: 700; background: #fde8e8; padding: 2px 6px; border-radius: 6px; }
+    .restaurant-address { font-size: 0.8rem; color: #666666; margin-bottom: 10px; line-height: 1.3; }
+    .restaurant-link { display: inline-block; background: #FEE500; color: #191919; text-decoration: none; padding: 8px 12px; border-radius: 8px; font-size: 0.8rem; font-weight: 800; width: 100%; text-align: center; }
+    .loading-box { text-align: center; padding: 40px 20px; color: #666; font-size: 0.9rem; font-weight: 700; }
+  </style>
+</head>
+<body>
+
+<div class="kakao-card">
+  <div class="kakao-header">
+    <span class="badge">카카오 맛집 픽</span>
+    <span class="step-text" id="stepIndicator">STEP 1 / 5</span>
+  </div>
+
+  <div id="step1" class="step-content active">
+    <h2>오늘 어떤 요리가 끌리나요?</h2>
+    <p class="sub-desc">먹고 싶은 카테고리를 하나 골라주세요.</p>
+    <div class="grid-btns">
+      <button class="category-btn" onclick="selectCategory('한식')">🍚 한식</button>
+      <button class="category-btn" onclick="selectCategory('중식')">🥢 중식</button>
+      <button class="category-btn" onclick="selectCategory('양식')">🍕 양식</button>
+      <button class="category-btn" onclick="selectCategory('일식')">🍣 일식</button>
+      <button class="category-btn" onclick="selectCategory('분식')">🍢 분식</button>
+      <button class="category-btn" onclick="selectCategory('아시안')">🍜 아시안</button>
+      <button class="category-btn" onclick="selectCategory('패스트푸드')">🍔 패스트푸드</button>
+      <button class="category-btn" onclick="selectCategory('디저트')">🍧 카페/디저트</button>
+    </div>
+  </div>
+
+  <div id="step2" class="step-content">
+    <h2>어제 먹은 음식은 무엇인가요?</h2>
+    <p class="sub-desc">어제 먹은 음식은 겹치지 않게 추천 목록에서 빼드립니다.</p>
+    <input type="text" id="yesterdayInput" placeholder="예: 짜장면, 김치찌개, 피자">
+    <button class="btn-kakao" onclick="goToStep3()">다음 단계로</button>
+  </div>
+
+  <div id="step3" class="step-content">
+    <h2>이 중 어떤 음식이 가장 먹고 싶나요?</h2>
+    <p class="sub-desc">추천된 3가지 메뉴 중 진짜 먹고 싶은 메뉴 1개를 터치하세요!</p>
+    <div class="menu-select-box" id="menuSelectContainer"></div>
+    <button class="btn-kakao" id="toStep4Btn" onclick="goToStep4()" disabled style="opacity: 0.5;">위치 입력하러 가기</button>
+  </div>
+
+  <div id="step4" class="step-content">
+    <h2>주변 맛집을 찾을 위치를 입력하세요</h2>
+    <p class="sub-desc">현재 거주 중인 동 이름이나 자주 가는 장소를 입력해 주세요.</p>
+    <div class="location-box">
+      <input type="text" id="locationInput" placeholder="예: 강남역, 성수동, 판교역, 해운대" style="margin-bottom:8px;">
+      <button class="btn-kakao" style="padding:10px; font-size:0.9rem;" onclick="searchUserLocation()">📍 해당 위치 설정하기</button>
+      <div class="location-status" id="locationStatusText"></div>
+    </div>
+    <button class="btn-kakao" id="toStep5Btn" onclick="goToStep5()" disabled style="opacity: 0.5;">실제 매장 찾아보기</button>
+  </div>
+
+  <div id="step5" class="step-content">
+    <h2 id="step5Title">실제 매장 탐색 중...</h2>
+    <p class="sub-desc" id="step5Desc">설정한 위치 주변 5km 이내의 진짜 카카오맵 매장들입니다.</p>
+    <div id="restaurantList"></div>
+    <button class="btn-dark" onclick="resetApp()">처음으로 돌아가기</button>
+  </div>
+</div>
+
+<script>
+  const foodData = {
+    '한식': ['김치찌개', '된장찌개', '제육볶음', '비빔밥', '불고기', '삼겹살', '순대국밥', '닭갈비'],
+    '중식': ['짜장면', '짬뽕', '탕수육', '마라탕', '볶음밥', '깐풍기', '마파두부'],
+    '양식': ['파스타', '고르곤졸라 피자', '수제버거', '스테이크', '리조또', '감바스'],
+    '일식': ['돈까스', '초밥', '라멘', '우동', '가츠동', '메밀소바'],
+    '분식': ['떡볶이', '순대', '튀김', '김밥', '라면', '쫄면'],
+    '아시안': ['쌀국수', '팟타이', '나시고랭', '분짜', '푸팟퐁커리'],
+    '패스트푸드': ['햄버거 세트', '치킨', '샌드위치', '타코', '부리또'],
+    '디저트': ['딸기빙수', '초코케익', '와플', '에그타르트', '크로플', '마카롱', '수플레 팬케이크']
+  };
+
+  let selectedCategory = '';
+  let yesterdayFood = '';
+  let targetMenu = '';
+  let targetLocationName = '';
+  let targetLat = 37.5665;
+  let targetLng = 126.9780;
+
+  function setStep(stepNum) {
+    document.getElementById('stepIndicator').textContent = `STEP ${stepNum} / 5`;
+    document.querySelectorAll('.step-content').forEach(el => el.classList.remove('active'));
+    document.getElementById(`step${stepNum}`).classList.add('active');
+  }
+
+  function selectCategory(cat) {
+    selectedCategory = cat;
+    setStep(2);
+  }
+
+  function goToStep3() {
+    yesterdayFood = document.getElementById('yesterdayInput').value.trim();
+    let available = foodData[selectedCategory].filter(food => food !== yesterdayFood);
+    available.sort(() => Math.random() - 0.5);
+    const pickedThree = available.slice(0, 3);
+
+    const container = document.getElementById('menuSelectContainer');
+    container.innerHTML = '';
+    targetMenu = '';
+    
+    const nextBtn = document.getElementById('toStep4Btn');
+    nextBtn.disabled = true;
+    nextBtn.style.opacity = '0.5';
+
+    pickedThree.forEach(item => {
+      const card = document.createElement('div');
+      card.className = 'menu-card';
+      card.innerHTML = `<span>🍴 ${item}</span> <span class="select-tag">선택하기</span>`;
+      card.onclick = () => {
+        document.querySelectorAll('.menu-card').forEach(c => c.classList.remove('selected'));
+        card.classList.add('selected');
+        targetMenu = item;
+        nextBtn.disabled = false;
+        nextBtn.style.opacity = '1';
+      };
+      container.appendChild(card);
+    });
+
+    setStep(3);
+  }
+
+  function goToStep4() {
+    if (!targetMenu) {
+      alert("먹고 싶은 메뉴 1개를 먼저 클릭해 선택해주세요!");
+      return;
+    }
+    setStep(4);
+  }
+
+  async function searchUserLocation() {
+    const locInput = document.getElementById('locationInput').value.trim();
+    const statusText = document.getElementById('locationStatusText');
+    const nextBtn = document.getElementById('toStep5Btn');
+
+    if (!locInput) {
+      alert("위치나 장소명을 입력해 주세요! (예: 강남역, 홍대입구, 성수동)");
+      return;
+    }
+
+    statusText.style.display = 'block';
+    statusText.style.background = '#e2e3e5';
+    statusText.style.color = '#383d41';
+    statusText.textContent = `'${locInput}' 위치 분석 중...`;
+
+    try {
+      const url = `https://dapi.kakao.com/v2/local/search/keyword.json?query=${encodeURIComponent(locInput)}`;
+      const res = await fetch(url, {
+        headers: { Authorization: 'KakaoAK 1a3b26c5c76d1de581fe1ff7864ca7e6' }
+      });
+      const data = await res.json();
+
+      if (data.documents && data.documents.length > 0) {
+        const place = data.documents[0];
+        targetLat = parseFloat(place.y);
+        targetLng = parseFloat(place.x);
+        targetLocationName = place.place_name || locInput;
+
+        statusText.style.background = '#d4edda';
+        statusText.style.color = '#155724';
+        statusText.textContent = `📍 [${targetLocationName}] 위치 설정 완료!`;
+        
+        nextBtn.disabled = false;
+        nextBtn.style.opacity = '1';
+      } else {
+        statusText.style.background = '#f8d7da';
+        statusText.style.color = '#721c24';
+        statusText.textContent = "위치를 찾을 수 없습니다. 정확한 지역명이나 장소명을 입력해 주세요.";
+        nextBtn.disabled = true;
+        nextBtn.style.opacity = '0.5';
+      }
+    } catch (e) {
+      console.error(e);
+      statusText.style.background = '#f8d7da';
+      statusText.style.color = '#721c24';
+      statusText.textContent = "위치 탐색 오류가 발생했습니다. 다시 시도해 주세요.";
+    }
+  }
+
+  async function goToStep5() {
+    setStep(5);
+    document.getElementById('step5Title').textContent = `🔥 [${targetLocationName}] 주변 ${targetMenu} 맛집`;
+    document.getElementById('step5Desc').textContent = `반경 5km 이내 실제 '${targetMenu}' 메뉴를 파는 카카오맵 매장들입니다.`;
+
+    const container = document.getElementById('restaurantList');
+    container.innerHTML = `<div class="loading-box">📍 ${targetLocationName} 주변에서 진짜 [${targetMenu}] 매장을 검색하는 중...</div>`;
+
+    try {
+      const queryStr = `${targetMenu}`;
+      const url = `https://dapi.kakao.com/v2/local/search/keyword.json?query=${encodeURIComponent(queryStr)}&x=${targetLng}&y=${targetLat}&radius=5000&sort=distance`;
+
+      const res = await fetch(url, {
+        headers: { Authorization: 'KakaoAK 1a3b26c5c76d1de581fe1ff7864ca7e6' }
+      });
+      const data = await res.json();
+
+      container.innerHTML = '';
+
+      if (data.documents && data.documents.length > 0) {
+        data.documents.slice(0, 6).forEach(place => {
+          const distKm = (parseInt(place.distance) / 1000).toFixed(1);
+          const card = document.createElement('div');
+          card.className = 'restaurant-card';
+          card.innerHTML = `
+            <div class="restaurant-header">
+              <span class="restaurant-title">${place.place_name}</span>
+              <span class="restaurant-distance">${distKm}km 거리에 위치</span>
+            </div>
+            <div class="restaurant-address">${place.road_address_name || place.address_name}</div>
+            <a class="restaurant-link" href="${place.place_url}" target="_blank">💛 카카오맵에서 메뉴판 & 리뷰 확인</a>
+          `;
+          container.appendChild(card);
+        });
+      } else {
+        container.innerHTML = `
+          <div style="text-align:center; padding:30px 10px; color:#666;">
+            😭 지정하신 위치 [${targetLocationName}] 주변 5km 이내에<br>
+            <strong>'${targetMenu}'</strong> 매장을 찾을 수 없습니다.<br><br>
+            위치를 중심 상권(예: 강남역, 홍대입구)으로 바꿔보세요!
+          </div>`;
+      }
+    } catch (e) {
+      console.error(e);
+      container.innerHTML = '<div style="text-align:center; padding:30px; color:#e74c3c;">검색 중 오류가 발생했습니다. 다시 시도해 주세요.</div>';
+    }
+  }
+
+  function resetApp() {
+    document.getElementById('yesterdayInput').value = '';
+    document.getElementById('locationInput').value = '';
+    document.getElementById('locationStatusText').style.display = 'none';
+    setStep(1);
+  }
+</script>
+
+</body>
+</html>
